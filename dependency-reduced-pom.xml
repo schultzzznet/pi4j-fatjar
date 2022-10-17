@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.pi4j</groupId>
+  <artifactId>pi4j-example-fatjar</artifactId>
+  <name>Pi4J :: MINIMAL EXAMPLE :: Sample "fat jar" project</name>
+  <version>0.0.1</version>
+  <description>Pi4J Sample Code</description>
+  <build>
+    <finalName>pi4j-example-fatjar</finalName>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+        <configuration>
+          <release>${java.version}</release>
+          <showDeprecation>true</showDeprecation>
+          <showWarnings>true</showWarnings>
+          <verbose>false</verbose>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven-jar-plugin.version}</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${main.class}</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven-shade-plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <transformers>
+            <transformer />
+          </transformers>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <properties>
+    <maven-jar-plugin.version>3.1.0</maven-jar-plugin.version>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
+    <main.class>com.pi4j.example.MinimalExample</main.class>
+    <slf4j.version>1.7.32</slf4j.version>
+    <java.version>11</java.version>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <pi4j.version>2.0</pi4j.version>
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+  </properties>
+</project>
