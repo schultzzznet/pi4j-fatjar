@@ -34,6 +34,19 @@ import com.pi4j.io.gpio.digital.DigitalState;
 import com.pi4j.io.gpio.digital.PullResistance;
 import com.pi4j.util.Console;
 
+/*import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+*/
+
+import java.io.*;
+import java.net.*;
+
+
 /**
  * <p>This example fully describes the base usage of Pi4J by providing extensive comments in each step.</p>
  *
@@ -42,19 +55,36 @@ import com.pi4j.util.Console;
  */
 public class MinimalExample {
 
-    private static final int PIN_BUTTON = 24; // PIN 18 = BCM 24
-    private static final int PIN_LED = 22; // PIN 15 = BCM 22
+    private static final int PIN_SENSOR = 24; // PIN 18 = BCM 24
+    private static final int PIN_LED = 23; // PIN 15 = BCM 22
 
-    private static int pressCount = 0;
+    private static int sensorCount = 0;
 
-    /**
-     * This application blinks a led and counts the number the button is pressed. The blink speed increases with each
-     * button press, and after 5 presses the application finishes.
-     *
-     * @param args an array of {@link java.lang.String} objects.
-     * @throws java.lang.Exception if any.
-     */
-    public static void main(String[] args) throws Exception {
+    /*
+    private static String sendPOST(String url) throws IOException {
+
+        String result = "";
+        HttpPost post = new HttpPost(url);
+
+        // add request parameters or form parameters
+        List<NameValuePair> urlParameters = new ArrayList<>();
+        //urlParameters.add(new BasicNameValuePair("username", "abc"));
+        //urlParameters.add(new BasicNameValuePair("password", "123"));
+        //urlParameters.add(new BasicNameValuePair("custom", "secret"));
+
+        post.setEntity(new UrlEncodedFormEntity(urlParameters));
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(post)){
+
+            result = EntityUtils.toString(response.getEntity());
+        }
+
+        return result;
+    }
+*/
+    public static void main(String[] args) {
+
         // Create Pi4J console wrapper/helper
         // (This is a utility class to abstract some of the boilerplate stdin/stdout code)
         final var console = new Console();
@@ -90,6 +120,9 @@ public class MinimalExample {
         // may include 'Platforms' and 'I/O Providers'
         var pi4j = Pi4J.newAutoContext();
 
+
+
+
         // ------------------------------------------------------------
         // Output Pi4J Context information
         // ------------------------------------------------------------
@@ -98,13 +131,14 @@ public class MinimalExample {
         // approach, we print out the info of these. This can be removed
         // from your own application.
         // OPTIONAL
-        PrintInfo.printLoadedPlatforms(console, pi4j);
-        PrintInfo.printDefaultPlatform(console, pi4j);
-        PrintInfo.printProviders(console, pi4j);
+        //PrintInfo.printLoadedPlatforms(console, pi4j);
+        //PrintInfo.printDefaultPlatform(console, pi4j);
+        //PrintInfo.printProviders(console, pi4j);
 
         // Here we will create I/O interfaces for a (GPIO) digital output
-        // and input pin. Since no specific 'provider' is defined, Pi4J will
-        // use the default `DigitalOutputProvider` for the current default platform.
+        // and input pin. We define the 'provider' to use PiGpio to control
+        // the GPIO.
+
         var ledConfig = DigitalOutput.newConfigBuilder(pi4j)
                 .id("led")
                 .name("LED Flasher")
@@ -114,33 +148,66 @@ public class MinimalExample {
                 .provider("pigpio-digital-output");
         var led = pi4j.create(ledConfig);
 
-        var buttonConfig = DigitalInput.newConfigBuilder(pi4j)
-                .id("button")
-                .name("Press button")
-                .address(PIN_BUTTON)
+
+        var sensorConfig = DigitalInput.newConfigBuilder(pi4j)
+                .id("sensor")
+                .name("Sensor activat")
+                .address(PIN_SENSOR)
                 .pull(PullResistance.PULL_DOWN)
                 .debounce(3000L)
                 .provider("pigpio-digital-input");
-        var button = pi4j.create(buttonConfig);
-        button.addListener(e -> {
+        var sensor = pi4j.create(sensorConfig);
+
+        sensor.addListener(e -> {
             if (e.state() == DigitalState.LOW) {
-                pressCount++;
-                console.println("Button was pressed for the " + pressCount + "th time");
+                sensorCount++;
+                console.println("Sensor was activated for the " + sensorCount + "th time");
+
+                led.high();
+                try { Thread.sleep(100 ); } catch (Exception exception) {}
+                led.low();
+
+                try {
+
+
+
+                    URL url = new URL("http://192.168.0.142:8123/api/webhook/metermeter");
+                    HttpURLConnection huc = (HttpURLConnection) url.openConnection();
+                    huc.setRequestMethod("POST");
+                    // OutputStream os = huc.getOutputStream();
+
+                    console.println("URL POST");
+
+                    huc.setDoOutput(true);
+                    DataOutputStream dos = new DataOutputStream(huc.getOutputStream());
+                    dos.writeChars("param1=value1&param2=value2");
+                    dos.flush();
+                    dos.close();
+
+                    int code = huc.getResponseCode();
+
+
+                    huc.disconnect();
+                }
+                catch (Exception exp) {
+                    console.println("URL exception " + exp);
+                }
+
+                //try {
+                    //sendPOST("http://192.168.0.142:8123/api/webhook/metermeter");
+                //}
+                //catch (IOException ioe) {
+//
+  //              }
             }
         });
 
         // OPTIONAL: print the registry
-        PrintInfo.printRegistry(console, pi4j);
+        //PrintInfo.printRegistry(console, pi4j);
 
-        while (pressCount < 5) {
-            if (led.equals(DigitalState.HIGH)) {
-                console.println("LED low");
-                led.low();
-            } else {
-                console.println("LED high");
-                led.high();
-            }
-            Thread.sleep(500 / (pressCount + 1));
+
+        while (sensorCount >= 0) {
+            try { Thread.sleep(500 ); } catch (Exception exception) {}
         }
 
         // ------------------------------------------------------------
